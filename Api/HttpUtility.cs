@@ -125,13 +125,6 @@ namespace KoenZomers.UniFi.Api
                 {
                     var decodedToken = new JwtSecurityTokenHandler().ReadToken(csrfCookie.Value) as JwtSecurityToken;
                     csrfValue = decodedToken.Claims.FirstOrDefault(c => c.Type == "csrfToken").Value;
-  
-                    //var jwt = csrfCookie.Value.Split('.');
-                    //if (jwt.Length == 3)
-                    //{
-                    //    jwt[1] = jwt[1].PadRight(jwt[1].Length + (4 - jwt[1].Length % 4) % 4, '=');
-                    //    csrfValue = JsonConvert.DeserializeObject<Responses.CSRFToken>(Encoding.UTF8.GetString(Convert.FromBase64String(jwt[1]))).Token;
-                    //}
                 }
             }
 
