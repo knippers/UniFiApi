@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace KoenZomers.UniFi.Api.Responses
 {
@@ -64,14 +65,8 @@ namespace KoenZomers.UniFi.Api.Responses
         /// <summary>
         /// Is VLAN enabled?
         /// </summary>
-        [JsonProperty(PropertyName = "vlan_enabled")]
-        public bool IsVLANEnabled { get; set; }
-
-        /// <summary>
-        /// If VLAN is enabled, VLAN number
-        /// </summary>
-        [JsonProperty(PropertyName = "vlan")]
-        public string VLAN { get; set; }
+        [JsonProperty(PropertyName = "mac_filter_list")]
+        public List<string> MACFilterList { get; set; }
 
         /// <summary>
         /// Is this SSID hidden?
@@ -82,8 +77,8 @@ namespace KoenZomers.UniFi.Api.Responses
         /// <summary>
         /// Id of the WLAN Group
         /// </summary>
-        [JsonProperty(PropertyName = "wlangroup_id")]
-        public string WLANGroupId { get; set; }
+        [JsonProperty(PropertyName = "networkconf_id")]
+        public string NetworkConfId { get; set; }
 
         /// <summary>
         /// Id of the RADIUS Profile

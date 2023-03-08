@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Security;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace KoenZomers.UniFi.Api
@@ -212,6 +212,28 @@ namespace KoenZomers.UniFi.Api
         /// <returns>String containing the result from the UniFi service</returns>
         public async Task<string> EnsureAuthenticatedPostRequest(Uri uri, string postData)
         {
+            return await EnsureAuthenticatedPutPostRequest(uri, postData, false);
+        }
+
+        /// <summary>
+        /// Makes a PUT request towards the UniFi Controller while trying to ensure the session is authenticated
+        /// </summary>
+        /// <param name="uri">Full URL to the UniFi controller to PUT data to</param>
+        /// <param name="postData">The HTTP PUT message body contents</param>
+        /// <returns>String containing the result from the UniFi service</returns>
+        public async Task<string> EnsureAuthenticatedPutRequest(Uri uri, string postData)
+        {
+            return await EnsureAuthenticatedPutPostRequest(uri, postData, true);
+        }
+
+        /// <summary>
+        /// Makes a POST/PUT request towards the UniFi Controller while trying to ensure the session is authenticated
+        /// </summary>
+        /// <param name="uri">Full URL to the UniFi controller to POST/PUT data to</param>
+        /// <param name="postData">The HTTP POST/PUT message body contents</param>
+        /// <returns>String containing the result from the UniFi service</returns>
+        private async Task<string> EnsureAuthenticatedPutPostRequest(Uri uri, string postData, bool put)
+        {
             // Ensure this session is authenticated
             if (!IsAuthenticated)
             {
@@ -231,7 +253,7 @@ namespace KoenZomers.UniFi.Api
             try
             {
                 // Try to get the data from the UniFi Controller
-                var resultString = await HttpUtility.PostRequest(uri, postData, _cookieContainer, ConnectionTimeout);
+                var resultString = await HttpUtility.PutPostRequest(uri, postData, _cookieContainer, ConnectionTimeout, put);
                 return resultString;
             }
             catch (WebException e) when (e.Message.Contains("401"))
@@ -245,7 +267,7 @@ namespace KoenZomers.UniFi.Api
                         throw new InvalidOperationException("Unable to reauthenticate using cached credentials. Call Authenticate first.");
                     }
 
-                    var resultString = await HttpUtility.PostRequest(uri, postData, _cookieContainer, ConnectionTimeout);
+                    var resultString = await HttpUtility.PutPostRequest(uri, postData, _cookieContainer, ConnectionTimeout, put);
                     return resultString;
                 }
 
@@ -286,7 +308,7 @@ namespace KoenZomers.UniFi.Api
         /// <returns>List with all known clients</returns>
         public async Task<List<Responses.Clients>> GetAllClients()
         {
-            var unifiUri = GetUri($"/api/s/{SiteId}/stat/alluser");
+            var unifiUri = GetUri($"api/s/{SiteId}/stat/alluser");
             var resultString = await EnsureAuthenticatedGetRequest(unifiUri);
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.Clients>>(resultString);
 
@@ -312,7 +334,7 @@ namespace KoenZomers.UniFi.Api
         /// <returns>List with all sites</returns>
         public async Task<List<Responses.Site>> GetSites()
         {
-            var unifiUri = GetUri($"/api/self/sites");
+            var unifiUri = GetUri($"api/self/sites");
             var resultString = await EnsureAuthenticatedGetRequest(unifiUri);
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.Site>>(resultString);
 
@@ -328,7 +350,7 @@ namespace KoenZomers.UniFi.Api
         public async Task<List<Responses.ClientSession>> GetClientHistory(string macAddress, int limit = 5)
         {
             // Make the POST request towards the UniFi API to request blocking the client with the provided MAC address
-            var resultString = await EnsureAuthenticatedPostRequest(GetUri($"/api/s/{SiteId}/stat/session"),
+            var resultString = await EnsureAuthenticatedPostRequest(GetUri($"api/s/{SiteId}/stat/session"),
                                                                     "{\"mac\":\"" + macAddress + "\",\"_limit\":" + limit + ",\"_sort\":\"-assoc_time\"}");
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.ClientSession>>(resultString);
 
@@ -351,7 +373,7 @@ namespace KoenZomers.UniFi.Api
         public async Task<Responses.ResponseEnvelope<Responses.Clients>> BlockClient(string macAddress)
         {
             // Make the POST request towards the UniFi API to request blocking the client with the provided MAC address
-            var resultString = await EnsureAuthenticatedPostRequest(GetUri($"/api/s/{SiteId}/cmd/stamgr"),
+            var resultString = await EnsureAuthenticatedPostRequest(GetUri($"api/s/{SiteId}/cmd/stamgr"),
                                                                     "{\"mac\":\"" + macAddress + "\",\"cmd\":\"block-sta\"}");
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.Clients>>(resultString);
 
@@ -365,7 +387,7 @@ namespace KoenZomers.UniFi.Api
         public async Task<Responses.ResponseEnvelope<Responses.Clients>> AuthorizeGuest(string macAddress)
         {
             // Make the POST request towards the UniFi API to request authorizing the client with the provided MAC address
-            var resultString = await EnsureAuthenticatedPostRequest(GetUri($"/api/s/{SiteId}/cmd/stamgr"),
+            var resultString = await EnsureAuthenticatedPostRequest(GetUri($"api/s/{SiteId}/cmd/stamgr"),
                                                                     "{\"mac\":\"" + macAddress + "\",\"cmd\":\"authorize-guest\"}");
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.Clients>>(resultString);
 
@@ -379,7 +401,7 @@ namespace KoenZomers.UniFi.Api
         public async Task<Responses.ResponseEnvelope<Responses.Clients>> UnauthorizeGuest(string macAddress)
         {
             // Make the POST request towards the UniFi API to request unauthorizing the client with the provided MAC address
-            var resultString = await EnsureAuthenticatedPostRequest(new Uri(BaseUri, $"/api/s/{SiteId}/cmd/stamgr"),
+            var resultString = await EnsureAuthenticatedPostRequest(new Uri(BaseUri, $"api/s/{SiteId}/cmd/stamgr"),
                                                                     "{\"mac\":\"" + macAddress + "\",\"cmd\":\"unauthorize-guest\"}");
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.Clients>>(resultString);
 
@@ -466,7 +488,7 @@ namespace KoenZomers.UniFi.Api
         /// </summary>
         /// <returns>List with defined networks</returns>
         public async Task<List<Responses.Network>> GetNetworks() {
-            var unifiUri = GetUri($"/api/s/{SiteId}/rest/networkconf");
+            var unifiUri = GetUri($"api/s/{SiteId}/rest/networkconf");
             var resultString = await EnsureAuthenticatedGetRequest(unifiUri);
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.Network>>(resultString);
 
@@ -478,12 +500,63 @@ namespace KoenZomers.UniFi.Api
         /// </summary>
         /// <returns>List with defined wireless networks</returns>
         public async Task<List<Responses.WirelessNetwork>> GetWirelessNetworks() {
-            var unifiUri = GetUri($"/api/s/{SiteId}/rest/wlanconf");
+            var unifiUri = GetUri($"api/s/{SiteId}/rest/wlanconf/");
             var resultString = await EnsureAuthenticatedGetRequest(unifiUri);
             var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.WirelessNetwork>>(resultString);
 
             return resultJson.data;
         }
+
+        public async Task<List<Responses.WirelessNetwork>> UpdateWirelessNetwork(string id, List<string> macAddresses)
+        {
+            if (string.IsNullOrEmpty(id) == true)
+                throw new ArgumentNullException(nameof(id));
+
+            if (macAddresses == null || macAddresses.Count == 0)
+                throw new ArgumentNullException(nameof(macAddresses));
+
+            foreach( var macAddress in macAddresses)
+            {
+                var m = Regex.Match(macAddress, "[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}", RegexOptions.Compiled);
+                if (m.Success == false)
+                    throw new ArgumentException($"Invalid MAC address ({macAddress}) in set");
+            }
+
+            Requests.WirelessNetwork wlan = new Requests.WirelessNetwork();
+            wlan.MACFilterList = new List<string>();
+            wlan.MACFilterList.AddRange(macAddresses);
+
+
+            var requestJson = JsonConvert.SerializeObject(wlan);
+
+            var unifiUri = GetUri($"api/s/{SiteId}/rest/wlanconf/{id}");
+            var resultString = await EnsureAuthenticatedPutRequest(unifiUri,requestJson);
+
+            var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.WirelessNetwork>>(resultString);
+
+            return resultJson.data;
+        }
+
+
+        public async Task<List<Responses.WirelessNetwork>> SetWirelessNetworkStatus(string id, bool enabled)
+        {
+            if (string.IsNullOrEmpty(id) == true)
+                throw new ArgumentNullException(nameof(id));
+
+            Requests.WirelessNetwork wlan = new Requests.WirelessNetwork();
+            //wlan.Id = id;
+            wlan.IsEnabled = null;
+
+            var requestJson = JsonConvert.SerializeObject(wlan);
+
+            var unifiUri = GetUri($"api/s/{SiteId}/rest/wlanconf/{id}");
+            var resultString = await EnsureAuthenticatedPutRequest(unifiUri, requestJson);
+
+            var resultJson = JsonConvert.DeserializeObject<Responses.ResponseEnvelope<Responses.WirelessNetwork>>(resultString);
+
+            return resultJson.data;
+        }
+
 
         /// <summary>
         /// Removes/forgets the provided clients

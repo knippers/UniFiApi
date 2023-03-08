@@ -14,7 +14,7 @@ namespace KoenZomers.UniFi.Api.ConsoleApp
         {
             // Create a new Api instance to connect with the UniFi Controller
             Console.WriteLine("Connecting to UniFi Controller");
-            var uniFiApi = new Api(new Uri(ConfigurationManager.AppSettings["UniFiControllerUrl"]), ConfigurationManager.AppSettings["UniFiControllerSiteId"]);
+            var uniFiApi = new Api(new Uri(ConfigurationManager.AppSettings["UniFiControllerUrl"]), ConfigurationManager.AppSettings["UniFiControllerSiteId"], true);
 
             // Disable SSL validation as UniFi uses a self signed certificate
             Console.WriteLine("- Disabling SSL validation");
@@ -49,6 +49,42 @@ namespace KoenZomers.UniFi.Api.ConsoleApp
             {
                 Console.WriteLine($"  - {activeClient.FriendlyName} (MAC {activeClient.MacAddress}, Channel {activeClient.Channel})");
             }
+
+            // Retrieve wireless networkd
+            Console.WriteLine("- Getting wireless networks");
+            var wirelessNetworks = await uniFiApi.GetWirelessNetworks();
+
+            Responses.WirelessNetwork networkToUpdate = null;
+
+            foreach (var wifiNetwork in wirelessNetworks)
+            {
+                Console.WriteLine($"  - {wifiNetwork.Name} (ID: {wifiNetwork.Id}, MAC Filter: {wifiNetwork.IsMACFilterEnabled})");
+                if( wifiNetwork.IsMACFilterEnabled == true)
+                {
+                    foreach( var mac in wifiNetwork.MACFilterList)
+                    {
+                        Console.WriteLine($"    - {mac}");
+                    }
+                }
+
+                if( wifiNetwork.Name == "TimeTell" )
+                {
+                    Console.WriteLine($"    - Saving {wifiNetwork.Name} for update");
+                    networkToUpdate = wifiNetwork;
+                }
+            }
+
+            if( networkToUpdate != null ) 
+            {
+                Console.WriteLine($"- Update wireless network: {networkToUpdate.Name}");
+                var data = await uniFiApi.UpdateWirelessNetwork(networkToUpdate.Id, networkToUpdate.MACFilterList);
+                //var data = await uniFiApi.SetWirelessNetworkStatus(networkToUpdate.Id, true);
+                Console.WriteLine(data.Count);
+
+            }
+
+
+
 
             // Logout
             await uniFiApi.Logout();

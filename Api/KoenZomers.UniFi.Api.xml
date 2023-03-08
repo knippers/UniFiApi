@@ -61,6 +61,7 @@
             </summary>
             <param name="baseUri">BaseUri of the UniFi Controller, i.e. https://192.168.0.1:8443</param>
             <param name="siteId">Identifier of the site in UniFi. Set to NULL if you want to use the default site.</param>
+            <param name="isUniFiOS">Specifies if target controller is UniFi OS based device or stand-alone software controller</param>
         </member>
         <member name="M:KoenZomers.UniFi.Api.Api.DisableSslValidation">
             <summary>
@@ -99,6 +100,22 @@
             </summary>
             <param name="uri">Full URL to the UniFi controller to POST data to</param>
             <param name="postData">The HTTP POST message body contents</param>
+            <returns>String containing the result from the UniFi service</returns>
+        </member>
+        <member name="M:KoenZomers.UniFi.Api.Api.EnsureAuthenticatedPutRequest(System.Uri,System.String)">
+            <summary>
+            Makes a PUT request towards the UniFi Controller while trying to ensure the session is authenticated
+            </summary>
+            <param name="uri">Full URL to the UniFi controller to PUT data to</param>
+            <param name="postData">The HTTP PUT message body contents</param>
+            <returns>String containing the result from the UniFi service</returns>
+        </member>
+        <member name="M:KoenZomers.UniFi.Api.Api.EnsureAuthenticatedPutPostRequest(System.Uri,System.String,System.Boolean)">
+            <summary>
+            Makes a POST/PUT request towards the UniFi Controller while trying to ensure the session is authenticated
+            </summary>
+            <param name="uri">Full URL to the UniFi controller to POST/PUT data to</param>
+            <param name="postData">The HTTP POST/PUT message body contents</param>
             <returns>String containing the result from the UniFi service</returns>
         </member>
         <member name="M:KoenZomers.UniFi.Api.Api.GetActiveClients">
@@ -268,6 +285,27 @@
             <param name="timeout">Timeout in milliseconds on how long the request may take. Default = 60000 = 60 seconds.</param>
             <returns>The website contents returned by the webserver after posting the data</returns>
         </member>
+        <member name="M:KoenZomers.UniFi.Api.HttpUtility.PutRequest(System.Uri,System.String,System.Net.CookieContainer,System.Int32)">
+            <summary>
+            Sends a PUT request towards UniFi
+            </summary>
+            <param name="url">Url to POST the postData to</param>
+            <param name="postData">Data to send to the UniFi service, typically a JSON payload</param>
+            <param name="cookieContainer">Cookies which have been recorded for this session</param>
+            <param name="timeout">Timeout in milliseconds on how long the request may take. Default = 60000 = 60 seconds.</param>
+            <returns>The website contents returned by the webserver after posting the data</returns>
+        </member>
+        <member name="M:KoenZomers.UniFi.Api.HttpUtility.PutPostRequest(System.Uri,System.String,System.Net.CookieContainer,System.Int32,System.Boolean)">
+            <summary>
+            Sends a POST request towards UniFi
+            </summary>
+            <param name="url">Url to POST the postData to</param>
+            <param name="postData">Data to send to the UniFi service, typically a JSON payload</param>
+            <param name="cookieContainer">Cookies which have been recorded for this session</param>
+            <param name="timeout">Timeout in milliseconds on how long the request may take. Default = 60000 = 60 seconds.</param>
+            <param name="put">False = POST, True = PUT</param>
+            <returns>The website contents returned by the webserver after posting the data</returns>
+        </member>
         <member name="M:KoenZomers.UniFi.Api.HttpUtility.AuthenticateViaJsonPostMethod(System.Uri,System.String,System.String,System.Net.CookieContainer,System.Int32)">
             <summary>
             Sends a POST request with JSON variables to authenticate against UniFi
@@ -287,6 +325,46 @@
             <param name="cookieContainer">Cookies which have been recorded for this session</param>
             <param name="timeout">Timeout in milliseconds on how long the request may take. Default = 60000 = 60 seconds.</param>
             <returns>The website contents returned by the webserver after posting the data</returns>
+        </member>
+        <member name="T:KoenZomers.UniFi.Api.Requests.BaseRequest">
+            <summary>
+            Base class to allow grouping all classes that represent UniFi Controller response messages
+            </summary>
+        </member>
+        <member name="T:KoenZomers.UniFi.Api.Requests.WirelessNetwork">
+            <summary>
+            Set properties on the wireless network
+            </summary>
+        </member>
+        <member name="P:KoenZomers.UniFi.Api.Requests.WirelessNetwork.IsEnabled">
+            <summary>
+            Is this network enabled?
+            </summary>
+        </member>
+        <member name="P:KoenZomers.UniFi.Api.Requests.WirelessNetwork.IsMACFilterEnabled">
+            <summary>
+            Is a MAC-Filter enabled?
+            </summary>
+        </member>
+        <member name="P:KoenZomers.UniFi.Api.Requests.WirelessNetwork.MACFilterPolicy">
+            <summary>
+            Default MAC-Filter policy
+            </summary>
+        </member>
+        <member name="P:KoenZomers.UniFi.Api.Requests.WirelessNetwork.MACFilterList">
+            <summary>
+            List of MAC addresses
+            </summary>
+        </member>
+        <member name="T:KoenZomers.UniFi.Api.Requests.WirelessNetworkStatus">
+            <summary>
+            Enable or disable a wireless network
+            </summary>
+        </member>
+        <member name="P:KoenZomers.UniFi.Api.Requests.WirelessNetworkStatus.IsEnabled">
+            <summary>
+            Is this network enabled?
+            </summary>
         </member>
         <member name="T:KoenZomers.UniFi.Api.Responses.AccessPoint">
             <summary>
@@ -537,6 +615,11 @@
         <member name="P:KoenZomers.UniFi.Api.Responses.ClientSession.Oid">
             <summary>
             Meaning unknown
+            </summary>
+        </member>
+        <member name="T:KoenZomers.UniFi.Api.Responses.CSRFToken">
+            <summary>
+            JWT CSRF token data returned in TOKEN header
             </summary>
         </member>
         <member name="T:KoenZomers.UniFi.Api.Responses.Device">
@@ -815,14 +898,9 @@
             Default MAC-Filter policy
             </summary>
         </member>
-        <member name="P:KoenZomers.UniFi.Api.Responses.WirelessNetwork.IsVLANEnabled">
+        <member name="P:KoenZomers.UniFi.Api.Responses.WirelessNetwork.MACFilterList">
             <summary>
             Is VLAN enabled?
-            </summary>
-        </member>
-        <member name="P:KoenZomers.UniFi.Api.Responses.WirelessNetwork.VLAN">
-            <summary>
-            If VLAN is enabled, VLAN number
             </summary>
         </member>
         <member name="P:KoenZomers.UniFi.Api.Responses.WirelessNetwork.IsSSIDHidden">
@@ -830,7 +908,7 @@
             Is this SSID hidden?
             </summary>
         </member>
-        <member name="P:KoenZomers.UniFi.Api.Responses.WirelessNetwork.WLANGroupId">
+        <member name="P:KoenZomers.UniFi.Api.Responses.WirelessNetwork.NetworkConfId">
             <summary>
             Id of the WLAN Group
             </summary>

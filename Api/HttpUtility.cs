@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
 using System.IdentityModel.Tokens.Jwt;
+using Newtonsoft.Json;
 
 namespace KoenZomers.UniFi.Api
 {
@@ -73,20 +74,70 @@ namespace KoenZomers.UniFi.Api
         /// <returns>The website contents returned by the webserver after posting the data</returns>
         public async static Task<string> PostRequest(Uri url, string postData, CookieContainer cookieContainer, int timeout = 60000)
         {
+            return await PutPostRequest(url, postData, cookieContainer, timeout, false);
+        }
+
+        /// <summary>
+        /// Sends a PUT request towards UniFi
+        /// </summary>
+        /// <param name="url">Url to POST the postData to</param>
+        /// <param name="postData">Data to send to the UniFi service, typically a JSON payload</param>
+        /// <param name="cookieContainer">Cookies which have been recorded for this session</param>
+        /// <param name="timeout">Timeout in milliseconds on how long the request may take. Default = 60000 = 60 seconds.</param>
+        /// <returns>The website contents returned by the webserver after posting the data</returns>
+        public async static Task<string> PutRequest(Uri url, string postData, CookieContainer cookieContainer, int timeout = 60000)
+        {
+            return await PutPostRequest(url, postData, cookieContainer, timeout, true);
+        }
+
+        /// <summary>
+        /// Sends a POST request towards UniFi
+        /// </summary>
+        /// <param name="url">Url to POST the postData to</param>
+        /// <param name="postData">Data to send to the UniFi service, typically a JSON payload</param>
+        /// <param name="cookieContainer">Cookies which have been recorded for this session</param>
+        /// <param name="timeout">Timeout in milliseconds on how long the request may take. Default = 60000 = 60 seconds.</param>
+        /// <param name="put">False = POST, True = PUT</param>
+        /// <returns>The website contents returned by the webserver after posting the data</returns>
+        public async static Task<string> PutPostRequest(Uri url, string postData, CookieContainer cookieContainer, int timeout = 60000, bool put = false)
+        {
             // Construct the POST request
             var request = (HttpWebRequest)WebRequest.Create(url);
-            request.Method = "POST";
+            request.Method = put ? "PUT" : "POST";
             request.Accept = "application/json, text/plain, */*";
-            request.ContentType = "application/json;charset=UTF-8";
+            request.ContentType = "application/json";// ;charset=UTF-8";
             request.CookieContainer = cookieContainer;
             request.Timeout = timeout;
             request.KeepAlive = false;
 
+            var csrfValue = "";
+
             // Check if the have a Cross Site Request Forgery cookie and if so, add it as the X-Csrf-Token header which is required by UniFi when making a POST
             var csrfCookie = cookieContainer.GetAllCookies().FirstOrDefault(c => c.Name == "csrf_token");
-            if(csrfCookie != null)
+            if( csrfCookie != null )
             {
-                request.Headers.Add("X-Csrf-Token", csrfCookie.Value);
+                csrfValue = csrfCookie.Value;
+            }
+            else // Try TOKEN header
+            {
+                csrfCookie = cookieContainer.GetAllCookies().FirstOrDefault(c => c.Name == "TOKEN");
+                if (csrfCookie != null)
+                {
+                    var decodedToken = new JwtSecurityTokenHandler().ReadToken(csrfCookie.Value) as JwtSecurityToken;
+                    csrfValue = decodedToken.Claims.FirstOrDefault(c => c.Type == "csrfToken").Value;
+  
+                    //var jwt = csrfCookie.Value.Split('.');
+                    //if (jwt.Length == 3)
+                    //{
+                    //    jwt[1] = jwt[1].PadRight(jwt[1].Length + (4 - jwt[1].Length % 4) % 4, '=');
+                    //    csrfValue = JsonConvert.DeserializeObject<Responses.CSRFToken>(Encoding.UTF8.GetString(Convert.FromBase64String(jwt[1]))).Token;
+                    //}
+                }
+            }
+
+            if(string.IsNullOrEmpty(csrfValue) == false)
+            {
+                request.Headers.Add("X-Csrf-Token", csrfValue);
             }
 
             // Convert the POST data to a byte array
