@@ -356,16 +356,6 @@
             List of MAC addresses
             </summary>
         </member>
-        <member name="T:KoenZomers.UniFi.Api.Requests.WirelessNetworkStatus">
-            <summary>
-            Enable or disable a wireless network
-            </summary>
-        </member>
-        <member name="P:KoenZomers.UniFi.Api.Requests.WirelessNetworkStatus.IsEnabled">
-            <summary>
-            Is this network enabled?
-            </summary>
-        </member>
         <member name="T:KoenZomers.UniFi.Api.Responses.AccessPoint">
             <summary>
             Details of a UniFi Access Point
@@ -615,11 +605,6 @@
         <member name="P:KoenZomers.UniFi.Api.Responses.ClientSession.Oid">
             <summary>
             Meaning unknown
-            </summary>
-        </member>
-        <member name="T:KoenZomers.UniFi.Api.Responses.CSRFToken">
-            <summary>
-            JWT CSRF token data returned in TOKEN header
             </summary>
         </member>
         <member name="T:KoenZomers.UniFi.Api.Responses.Device">

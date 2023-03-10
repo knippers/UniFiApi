@@ -277,7 +277,7 @@ namespace KoenZomers.UniFi.Api
                 var cookies = cookieContainer.GetCookies(url);
                 if (cookies.Count > 0)
                 {
-                    var decodedToken = new JwtSecurityTokenHandler().ReadToken(cookies["Token"].Value) as JwtSecurityToken;
+                    var decodedToken = new JwtSecurityTokenHandler().ReadToken(cookies["TOKEN"].Value) as JwtSecurityToken;
                     var tokenValue = decodedToken.Claims.FirstOrDefault(c => c.Type == "csrfToken").Value;
                     request.Headers.Add("x-csrf-token", tokenValue);
                 }
